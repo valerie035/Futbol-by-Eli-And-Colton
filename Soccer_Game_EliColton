@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emoji Football Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #0066cc;
+            margin-bottom: 10px;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            margin: 0 auto;
+            background-color: #7cfc00;
+            border: 4px solid #228b22;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .out-of-bounds {
+            position: absolute;
+            border: 2px dashed white;
+            width: calc(100% - 20px);
+            height: calc(100% - 20px);
+            top: 10px;
+            left: 10px;
+            pointer-events: none;
+        }
+        
+        .field-marking {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .center-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            border: 2px solid white;
+            border-radius: 50%;
+        }
+        
+        .center-spot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            background-color: white;
+            border-radius: 50%;
+        }
+        
+        .halfway-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: white;
+        }
+        
+        .goal {
+            position: absolute;
+            width: 80px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.3);
+            border: 2px solid white;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .goal-top {
+            top: -2px;
+        }
+        
+        .goal-bottom {
+            bottom: -2px;
+        }
+        
+        .player {
+            position: absolute;
+            font-size: 24px;
+            user-select: none;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            transition: left 0.1s, top 0.1s;
+            z-index: 10; /* Ensure players are visible above other elements */
+        }
+        
+        .ball {
+            position: absolute;
+            font-size: 20px;
+            user-select: none;
+            transform: translate(-50%, -50%);
+            z-index: 5; /* Ensure ball is visible but below players */
+        }
+        
+        .controls {
+            margin-top: 20px;
+        }
+        
+        .scoreboard {
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px auto;
+            width: 200px;
+        }
+        
+        .team {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            outline: none; /* Remove outline */
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:active {
+            background-color: #3e8e41;
+            transform: translateY(1px); /* Give button a pressed effect */
+        }
+        
+        .player-select {
+            padding: 5px 10px;
+            margin: 0 3px;
+        }
+        
+        .instructions {
+            max-width: 400px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>⚽ Emoji Football Game ⚽</h1>
+    
+    <div class="scoreboard">
+        <div class="team">
+            <span>Blue Team 🔵</span>
+            <span id="blue-score">0</span>
+        </div>
+        <div class="team">
+            <span>Red Team 🔴</span>
+            <span id="red-score">0</span>
+        </div>
+    </div>
+    
+    <div class="game-container" id="gameField">
+        <div class="field-marking">
+            <div class="halfway-line"></div>
+            <div class="center-circle"></div>
+            <div class="center-spot"></div>
+            <div class="goal goal-top"></div>
+            <div class="goal goal-bottom"></div>
+        </div>
+        
+        <!-- Players and ball will be added by JavaScript -->
+    </div>
+    
+            <div class="controls">
+        <button id="resetBtn">Reset Game</button>
+        <div style="margin-top: 10px;">
+            <button id="player1Btn" class="player-select">Player 1</button>
+            <button id="player2Btn" class="player-select">Player 2</button>
+            <button id="player3Btn" class="player-select">Player 3</button>
+        </div>
+        <div style="margin-top: 5px;">
+            <span>Selected Player: <span id="currentPlayer">1</span></span>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h3>How to Play:</h3>
+        <p>1. Use Arrow Keys (←↑↓→) to move the selected blue player</p>
+        <p>2. Press Space Bar to kick the ball in the direction of your player</p>
+        <p>3. You can also click and drag players with your mouse</p>
+        <p>4. Score by getting the ball into the opponent's goal</p>
+        <p>5. The ball will bounce off the edges of the field</p>
+        <p>6. Red team players (🔴) will try to block you!</p>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const gameField = document.getElementById('gameField');
+            const blueScoreElement = document.getElementById('blue-score');
+            const redScoreElement = document.getElementById('red-score');
+            const resetBtn = document.getElementById('resetBtn');
+            const player1Btn = document.getElementById('player1Btn');
+            const player2Btn = document.getElementById('player2Btn');
+            const player3Btn = document.getElementById('player3Btn');
+            const currentPlayerElement = document.getElementById('currentPlayer');
+            
+            let blueScore = 0;
+            let redScore = 0;
+            
+            const fieldWidth = gameField.offsetWidth;
+            const fieldHeight = gameField.offsetHeight;
+            
+            let selectedPlayer = null;
+            let selectedPlayerIndex = 0; // Currently selected player index for keyboard controls
+            let isDragging = false;
+            
+            // Game objects
+            const ball = { 
+                element: null, 
+                x: fieldWidth / 2, 
+                y: fieldHeight / 2, 
+                vx: 0, 
+                vy: 0,
+                moving: false
+            };
+            
+            const bluePlayers = [
+                { element: null, x: fieldWidth / 4, y: fieldHeight / 4, team: 'blue' },
+                { element: null, x: fieldWidth / 4, y: 3 * fieldHeight / 4, team: 'blue' },
+                { element: null, x: fieldWidth / 2, y: 3 * fieldHeight / 4, team: 'blue' }
+            ];
+            
+            const redPlayers = [
+                { element: null, x: 3 * fieldWidth / 4, y: fieldHeight / 4, team: 'red' },
+                { element: null, x: 3 * fieldWidth / 4, y: 3 * fieldHeight / 4, team: 'red' },
+                { element: null, x: fieldWidth / 2, y: fieldHeight / 4, team: 'red' }
+            ];
+            
+            function createGameElements() {
+                // Remove any existing elements first (for reset)
+                const existingPlayers = gameField.querySelectorAll('.player');
+                existingPlayers.forEach(player => player.remove());
+                
+                const existingBall = gameField.querySelector('.ball');
+                if (existingBall) existingBall.remove();
+                
+                // Create ball
+                ball.element = document.createElement('div');
+                ball.element.className = 'ball';
+                ball.element.textContent = '⚽';
+                ball.element.style.left = ball.x + 'px';
+                ball.element.style.top = ball.y + 'px';
+                gameField.appendChild(ball.element);
+                
+                // Create blue players
+                bluePlayers.forEach((player, index) => {
+                    player.element = document.createElement('div');
+                    player.element.className = 'player';
+                    player.element.textContent = '🔵';
+                    player.element.style.left = player.x + 'px';
+                    player.element.style.top = player.y + 'px';
+                    player.element.dataset.index = index;
+                    player.element.dataset.team = 'blue';
+                    gameField.appendChild(player.element);
+                });
+                
+                // Create red players
+                redPlayers.forEach((player, index) => {
+                    player.element = document.createElement('div');
+                    player.element.className = 'player';
+                    player.element.textContent = '🔴';
+                    player.element.style.left = player.x + 'px';
+                    player.element.style.top = player.y + 'px';
+                    player.element.dataset.index = index;
+                    player.element.dataset.team = 'red';
+                    gameField.appendChild(player.element);
+                });
+            }
+            
+            function resetGame() {
+                // Reset ball position
+                ball.x = fieldWidth / 2;
+                ball.y = fieldHeight / 2;
+                ball.vx = 0;
+                ball.vy = 0;
+                ball.moving = false;
+                updateBallPosition();
+                
+                // Reset player positions
+                bluePlayers.forEach((player, index) => {
+                    player.x = [fieldWidth / 4, fieldWidth / 4, fieldWidth / 2][index];
+                    player.y = [fieldHeight / 4, 3 * fieldHeight / 4, 3 * fieldHeight / 4][index];
+                    updatePlayerPosition(player);
+                });
+                
+                redPlayers.forEach((player, index) => {
+                    player.x = [3 * fieldWidth / 4, 3 * fieldWidth / 4, fieldWidth / 2][index];
+                    player.y = [fieldHeight / 4, 3 * fieldHeight / 4, fieldHeight / 4][index];
+                    updatePlayerPosition(player);
+                });
+            }
+            
+            function updateBallPosition() {
+                ball.element.style.left = ball.x + 'px';
+                ball.element.style.top = ball.y + 'px';
+            }
+            
+            function updatePlayerPosition(player) {
+                player.element.style.left = player.x + 'px';
+                player.element.style.top = player.y + 'px';
+            }
+            
+            function moveAI() {
+                // Simple AI for red team
+                redPlayers.forEach(player => {
+                    // Move toward ball
+                    const dx = ball.x - player.x;
+                    const dy = ball.y - player.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance > 10) {
+                        player.x += dx * 0.01; // Reduced from 0.02 to 0.01 to make red players slower
+                        player.y += dy * 0.01; // Reduced from 0.02 to 0.01 to make red players slower
+                        updatePlayerPosition(player);
+                    }
+                });
+            }
+            
+            function checkCollisions() {
+                // Ball with field boundaries
+                if (ball.x < 10) {
+                    ball.x = 10;
+                    ball.vx = -ball.vx * 0.7;
+                }
+                if (ball.x > fieldWidth - 10) {
+                    ball.x = fieldWidth - 10;
+                    ball.vx = -ball.vx * 0.7;
+                }
+                
+                // Check for goals
+                if (ball.y < 15 && ball.x > fieldWidth/2 - 40 && ball.x < fieldWidth/2 + 40) {
+                    // Goal for blue team
+                    blueScore++;
+                    blueScoreElement.textContent = blueScore;
+                    resetGame();
+                    return;
+                }
+                
+                if (ball.y > fieldHeight - 15 && ball.x > fieldWidth/2 - 40 && ball.x < fieldWidth/2 + 40) {
+                    // Goal for red team
+                    redScore++;
+                    redScoreElement.textContent = redScore;
+                    resetGame();
+                    return;
+                }
+                
+                if (ball.y < 10) {
+                    ball.y = 10;
+                    ball.vy = -ball.vy * 0.7;
+                }
+                if (ball.y > fieldHeight - 10) {
+                    ball.y = fieldHeight - 10;
+                    ball.vy = -ball.vy * 0.7;
+                }
+                
+                // Ball with players
+                const allPlayers = [...bluePlayers, ...redPlayers];
+                allPlayers.forEach(player => {
+                    const dx = ball.x - player.x;
+                    const dy = ball.y - player.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 25) {
+                        // Collision detected
+                        const angle = Math.atan2(dy, dx);
+                        const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+                        
+                        ball.vx = Math.cos(angle) * (speed + 1);
+                        ball.vy = Math.sin(angle) * (speed + 1);
+                        
+                        // Push ball away from player
+                        ball.x += Math.cos(angle) * 5;
+                        ball.y += Math.sin(angle) * 5;
+                    }
+                });
+            }
+            
+            function updateGame() {
+                if (ball.moving) {
+                    // Apply friction
+                    ball.vx *= 0.98;
+                    ball.vy *= 0.98;
+                    
+                    // Update ball position
+                    ball.x += ball.vx;
+                    ball.y += ball.vy;
+                    
+                    // Stop ball if it's moving very slowly
+                    if (Math.abs(ball.vx) < 0.1 && Math.abs(ball.vy) < 0.1) {
+                        ball.vx = 0;
+                        ball.vy = 0;
+                        ball.moving = false;
+                    }
+                    
+                    updateBallPosition();
+                    checkCollisions();
+                }
+                
+                // Move AI players
+                moveAI();
+                
+                requestAnimationFrame(updateGame);
+            }
+            
+            // Function to kick the ball
+            function kickBall() {
+                if (!ball.moving) {
+                    const player = bluePlayers[selectedPlayerIndex];
+                    const dx = ball.x - player.x;
+                    const dy = ball.y - player.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 100) {
+                        const angle = Math.atan2(dy, dx);
+                        ball.vx = Math.cos(angle) * 5;
+                        ball.vy = Math.sin(angle) * 5;
+                        ball.moving = true;
+                    }
+                }
+            }
+            
+            // Function to update the currently selected player
+            function updateSelectedPlayer(index) {
+                selectedPlayerIndex = index;
+                currentPlayerElement.textContent = index + 1;
+                
+                // Highlight the selected player button
+                [player1Btn, player2Btn, player3Btn].forEach((btn, i) => {
+                    if (i === index) {
+                        btn.style.backgroundColor = '#2196F3';
+                    } else {
+                        btn.style.backgroundColor = '#4CAF50';
+                    }
+                });
+            }
+            
+            // Event listeners
+            gameField.addEventListener('mousedown', function(e) {
+                const target = e.target;
+                
+                if (target.classList.contains('player') && target.dataset.team === 'blue') {
+                    const index = parseInt(target.dataset.index);
+                    selectedPlayer = bluePlayers[index];
+                    updateSelectedPlayer(index);
+                    isDragging = true;
+                } else if (target.classList.contains('ball') && !ball.moving) {
+                    kickBall();
+                }
+            });
+            
+            gameField.addEventListener('mousemove', function(e) {
+                if (isDragging && selectedPlayer) {
+                    const rect = gameField.getBoundingClientRect();
+                    selectedPlayer.x = e.clientX - rect.left;
+                    selectedPlayer.y = e.clientY - rect.top;
+                    
+                    // Keep player within bounds
+                    selectedPlayer.x = Math.max(15, Math.min(fieldWidth - 15, selectedPlayer.x));
+                    selectedPlayer.y = Math.max(15, Math.min(fieldHeight - 15, selectedPlayer.y));
+                    
+                    updatePlayerPosition(selectedPlayer);
+                }
+            });
+            
+            gameField.addEventListener('mouseup', function() {
+                isDragging = false;
+                selectedPlayer = null;
+            });
+            
+            gameField.addEventListener('mouseleave', function() {
+                isDragging = false;
+                selectedPlayer = null;
+            });
+            
+            // Keyboard controls
+            document.addEventListener('keydown', function(e) {
+                const player = bluePlayers[selectedPlayerIndex];
+                const moveStep = 10;
+                
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        player.x = Math.max(15, player.x - moveStep);
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        player.x = Math.min(fieldWidth - 15, player.x + moveStep);
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        player.y = Math.max(15, player.y - moveStep);
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        player.y = Math.min(fieldHeight - 15, player.y + moveStep);
+                        break;
+                    case ' ': // Space bar
+                        e.preventDefault(); // Prevent default space bar behavior
+                        kickBall();
+                        break;
+                    case '1':
+                        updateSelectedPlayer(0);
+                        e.preventDefault();
+                        break;
+                    case '2':
+                        updateSelectedPlayer(1);
+                        e.preventDefault();
+                        break;
+                    case '3':
+                        updateSelectedPlayer(2);
+                        e.preventDefault();
+                        break;
+                }
+                
+                updatePlayerPosition(player);
+            });
+            
+            // Player selection buttons
+            player1Btn.addEventListener('click', function() {
+                updateSelectedPlayer(0);
+            });
+            
+            player2Btn.addEventListener('click', function() {
+                updateSelectedPlayer(1);
+            });
+            
+            player3Btn.addEventListener('click', function() {
+                updateSelectedPlayer(2);
+            });
+            
+            resetBtn.addEventListener('click', function() {
+                blueScore = 0;
+                redScore = 0;
+                blueScoreElement.textContent = '0';
+                redScoreElement.textContent = '0';
+                resetGame();
+                
+                // Focus on the game field after reset
+                gameField.focus();
+                
+                // Highlight that we've reset
+                resetBtn.textContent = "Game Reset!";
+                setTimeout(() => {
+                    resetBtn.textContent = "Reset Game";
+                }, 1000);
+            });
+            
+            // Initialize game
+            createGameElements();
+            resetGame();
+            updateGame();
+            updateSelectedPlayer(0); // Set player 1 as initially selected
+        });
+    </script>
+</body>
+</html>
